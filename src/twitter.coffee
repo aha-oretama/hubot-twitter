@@ -5,6 +5,7 @@ HTTPS        = require 'https'
 EventEmitter = require('events').EventEmitter
 oauth        = require('oauth')
 twit         = require('twit')
+fs           = require('fs')
 
 class Twitter extends Adapter
 
