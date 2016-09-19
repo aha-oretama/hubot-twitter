@@ -6,8 +6,9 @@ This is the [Twitter](http://twitter.com) adapter for hubot that allows you to
 send an tweet to your Hubot and he will send an tweet back with the response.
 
 This repository is forked from https://github.com/MathildeLemee/hubot-twitter.
-The only differene between this repository and the repository from that this repository is forked 
-is that tweets are not devided by '\n'.
+The differences between this repository and original repository are two points.
+One is that tweets are not devided by '\n'.
+The another is that `emote` method can upload images.
 
 ## Installation
 
