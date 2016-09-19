@@ -4,6 +4,7 @@
 HTTPS        = require 'https'
 EventEmitter = require('events').EventEmitter
 oauth        = require('oauth')
+twit         = require('twit')
 
 class Twitter extends Adapter
 
@@ -11,6 +12,11 @@ class Twitter extends Adapter
     console.log "Sending strings to user: " + user.screen_name
     strings.forEach (str) =>
         @bot.send(user.user.user, str, user.user.status_id )
+
+  emote: (user, strings...) ->
+    console.log "upload file to user: " + user.screen_name
+    strings.forEach (str) =>
+        @bot.upload(user.user.user, str, user.user.status_id)
 
   reply: (user, strings...) ->
     console.log "Replying"
@@ -53,6 +59,7 @@ exports.use = (robot) ->
 class TwitterStreaming extends EventEmitter
 
   self = @
+  @twit
   constructor: (options) ->
     if options.token? and options.secret? and options.key? and options.tokensecret?
       @token         = options.token
@@ -67,6 +74,12 @@ class TwitterStreaming extends EventEmitter
                                   "1.0A",
                                   "",
                                   "HMAC-SHA1"
+      twit = new twit({
+        consumer_key:         options.key,
+        consumer_secret:      options.secret,
+        access_token:         options.token
+        access_token_secret:  options.tokensecret
+      })
     else
       throw new Error("Not enough parameters provided. I need a key, a secret, a token, a secret token")
 
@@ -79,6 +92,25 @@ class TwitterStreaming extends EventEmitter
       if error
         console.log "twitter send error: #{error} #{data}"
       console.log "Status #{response.statusCode}"
+
+  upload: (user, imagePath, in_reply_to_status_id) ->
+    console.log "send twitt to #{user} with image #{imagePath}"
+    b64content = fs.readFileSync(imagePath, { encoding: 'base64' })
+    # first we must post the media to Twitter
+    twit.post 'media/upload', { media_data: b64content }, (err, data, response) ->
+      # now we can assign alt text to the media, for use by screen readers and
+      # other text-based presentations and interpreters
+      mediaIdStr = data.media_id_string
+      altText = "This is shogi image."
+      meta_params = { media_id: mediaIdStr, alt_text: { text: altText } }
+
+      twit.post 'media/metadata/create', meta_params, (err, data, response) ->
+        if (!err)
+          # now we can reference the media and post a tweet (media will attach to the tweet)
+          params = {status: "@#{user} ", in_reply_to_status_id: in_reply_to_status_id, media_ids: [mediaIdStr]}
+
+          twit.post 'statuses/update', params, (err, data, response) ->
+            console.log(data)
 
   # Convenience HTTP Methods for posting on behalf of the token"d user
   get: (path, callback) ->
